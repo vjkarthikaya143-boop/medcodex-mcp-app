@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String
+  name          String?
+  role          Role      @default(STUDENT) // Left Mode (STUDENT) vs Right Mode (CODER/ADMIN)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  subscriptions Subscription[]
+  progress      Progress[]
+  authSessions  Session[]
+}
+
+enum Role {
+  STUDENT
+  CODER
+  AUDITOR
+  ADMIN
+}
+
+model Subscription {
+  id            String    @id @default(uuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  planType      String    // "MONTHLY", "ANNUAL", "ENTERPRISE"
+  status        String    // "ACTIVE", "CANCELLED", "PAST_DUE"
+  paymentMethod String?   // "UPIGPAY", "CARD"
+  paymentMeta   Json?     // Stores Razorpay/Stripe txn details
+  expiresAt     DateTime
+  createdAt     DateTime  @default(now())
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionToken String   @unique
+  expires      DateTime
+}
+
+model Progress {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  moduleId    String
+  score       Float
+  completedAt DateTime @default(now())
+}
